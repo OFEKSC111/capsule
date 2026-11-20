@@ -81,7 +81,7 @@
     <ol>
       <li>לחצו "פתחו מצלמה" ואשרו גישה למצלמה ולמיקרופון.</li>
       <li>המצלמה תופיע בחצי העליון, והשאלות בחצי התחתון.</li>
-      <li>לחצו "התחלת הקלטה". לכל שאלה יש <b id="secTxt">10</b> שניות, והשאלה הנוכחית מסומנת בצהוב.</li>
+      <li>לחצו "התחלת הקלטה". לכל שאלה יש <b id="secTxt">10</b> שניות (ולמסר החופשי בסוף – יותר זמן), והשאלה הנוכחית מסומנת בצהוב.</li>
       <li>בסוף צופים בסרטון, ורק אחרי אישור הוא נשלח.</li>
     </ol>
     <p style="opacity:.85;font-size:14px">טיפ: מקום שקט, אור מהחזית, והטלפון בגובה העיניים.</p>
@@ -250,13 +250,15 @@ function draw(){
   requestAnimationFrame(draw);
 }
 
+function secOf(i){ return (S.secs && S.secs[i]) || S.seconds || 10; }
+
 function setOverlay(){
   const items = [...$('qRecList').children];
   items.forEach((li, i) => li.className = i < qIndex ? 'done' : (i === qIndex ? 'cur' : ''));
   if (qIndex >= 0 && qIndex < items.length) {
     items[qIndex].scrollIntoView({ block:'nearest', behavior:'smooth' });
     $('qtop').textContent = 'שאלה ' + (qIndex + 1) + ' מתוך ' + S.questions.length + ' · ' + left + ' שניות';
-    $('qbar').style.width = (100 * left / S.seconds) + '%';
+    $('qbar').style.width = (100 * left / secOf(qIndex)) + '%';
   }
 }
 
@@ -283,13 +285,13 @@ $('btnRec').onclick = () => {
     toPreview(new Blob(chunks, { type: type }));
   };
   recorder.start(1000);
-  qIndex = 0; left = S.seconds; setOverlay();
+  qIndex = 0; left = secOf(0); setOverlay();
   timer = setInterval(() => {
     left--;
     if (left <= 0) {
       qIndex++;
       if (qIndex >= S.questions.length) { clearInterval(timer); qIndex = -1; recorder.stop(); return; }
-      left = S.seconds;
+      left = secOf(qIndex);
     }
     setOverlay();
   }, 1000);
