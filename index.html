@@ -177,6 +177,7 @@ $('btnVerify').onclick = async () => {
       r.questions.forEach(q => { const li = document.createElement('li'); li.textContent = q; $(id).appendChild(li); });
     });
     show('sIntro');
+    $('btnCam').onclick();
   } catch (e) { $('mCode').textContent = 'שגיאה: ' + e.message; }
   finally { $('btnVerify').disabled = false; }
 };
