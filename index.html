@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>קפסולת הזמן של אופק</title>
+<style>
+  :root { --navy:#1F2A4F; --gold:#E2B33C; --bg:#0E1630; --txt:#F4F1E8; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; }
+  body { font-family:Arial, "Segoe UI", sans-serif; background:var(--bg); color:var(--txt); }
+  .hero { position:fixed; inset:0; z-index:0; background:#24305a center/cover no-repeat; }
+  .hero::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(14,22,48,.25) 0%, rgba(14,22,48,.55) 100%); }
+  .wrap { position:relative; z-index:1; max-width:480px; margin:0 5vw 0 auto; min-height:100vh; padding:24px 16px; display:flex; flex-direction:column; justify-content:center; }
+  @media (max-width:820px) {
+    .hero { background-position:39% center; }
+    .wrap { margin:0 auto; justify-content:flex-end; padding-bottom:28px; }
+  }
+  .ttl { margin:0 0 6px; text-align:center; font-size:30px; color:var(--gold); text-shadow:0 2px 10px rgba(0,0,0,.85); }
+  .sub { text-align:center; margin:0 0 16px; font-size:14px; text-shadow:0 1px 6px rgba(0,0,0,.9); }
+  .card { background:rgba(20,30,64,.82); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); box-shadow:0 10px 30px rgba(0,0,0,.45); border-radius:14px; padding:18px; margin-bottom:14px; line-height:1.6; }
+  label.l { display:block; margin-bottom:8px; }
+  input[type=email], input[type=text] { width:100%; font-size:18px; padding:12px; border-radius:10px; border:1px solid #3A4A80; background:#0E1630; color:var(--txt); direction:ltr; text-align:left; }
+  button, .btn { display:block; width:100%; font-size:18px; padding:14px; border:0; border-radius:12px; margin-top:12px; cursor:pointer; font-weight:bold; text-align:center; font-family:inherit; }
+  .primary { background:var(--gold); color:var(--navy); }
+  .ghost { background:transparent; color:var(--txt); border:1px solid #5A6AA0; }
+  button:disabled { opacity:.5; }
+  .msg { min-height:22px; margin-top:10px; font-size:15px; color:#FFB4A8; }
+  .hide { display:none !important; }
+  ol { padding-right:22px; margin:8px 0; }
+  .center { text-align:center; }
+  #preview { width:100%; max-height:60vh; display:block; border-radius:14px; background:#000; }
+  .bar { height:10px; background:#2A3766; border-radius:6px; overflow:hidden; margin-top:12px; }
+  .bar > div { height:100%; width:0; background:var(--gold); transition:width .3s; }
+  #fileIn { position:absolute; width:1px; height:1px; opacity:0; }
+  #sRec { position:fixed; inset:0; z-index:5; background:var(--bg); display:flex; flex-direction:column; }
+  #camWrap { position:relative; height:50vh; height:50dvh; background:#000; flex:none; }
+  #live { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:block; }
+  #qtop { position:absolute; left:0; right:0; top:0; padding:8px; background:rgba(14,22,48,.75); color:var(--gold); text-align:center; font-weight:bold; font-size:17px; }
+  #qbar { position:absolute; left:0; top:38px; height:5px; background:var(--gold); width:0; }
+  #recDot { position:absolute; top:48px; right:12px; background:#C0392B; color:#fff; font-size:13px; font-weight:bold; padding:3px 9px; border-radius:20px; }
+  #qPanel { flex:1; overflow-y:auto; padding:8px 12px 0; }
+  #qPanel ol { margin:0; padding:0; list-style:none; counter-reset:q; }
+  #qPanel li { counter-increment:q; padding:9px 12px; margin:4px 0; border-radius:10px; background:rgba(255,255,255,.06); font-size:16px; line-height:1.4; transition:all .25s; }
+  #qPanel li::before { content:counter(q) ". "; font-weight:bold; color:var(--gold); }
+  #qPanel li.cur { background:var(--gold); color:var(--navy); font-weight:bold; font-size:18px; }
+  #qPanel li.cur::before { color:var(--navy); }
+  #qPanel li.done { opacity:.4; }
+  #recBar { flex:none; padding:8px 12px 14px; display:flex; gap:10px; }
+  #recBar button { margin-top:0; }
+  #btnCancel { width:35%; }
+  #canvas { display:none; }
+</style>
+</head>
+<body>
+<div class="hero" id="hero"></div>
+
+<div class="wrap" id="main">
+  <h1 class="ttl">קפסולת הזמן של אופק</h1>
+  <p class="sub">היום אנחנו חולמים. מחר אנחנו נזכרים.</p>
+
+  <div id="sEmail" class="card">
+    <label class="l" for="email">הקלידו את כתובת המייל של משרד החינוך שלכם:</label>
+    <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="123456789@educ.org.il">
+    <button class="primary" id="btnSend">שלחו לי קוד</button>
+    <div class="msg" id="mEmail"></div>
+  </div>
+
+  <div id="sCode" class="card hide">
+    <label class="l" for="code">שלחנו קוד בן 6 ספרות למייל של משרד החינוך. הקלידו אותו כאן:</label>
+    <input id="code" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456">
+    <button class="primary" id="btnVerify">כניסה</button>
+    <button class="ghost" id="btnBack">לא קיבלתי קוד / שינוי מייל</button>
+    <div class="msg" id="mCode"></div>
+  </div>
+
+  <div id="sMsg" class="card hide"><p id="msgTxt" style="margin:0"></p></div>
+
+  <div id="sIntro" class="card hide">
+    <p id="hello" style="font-size:18px;margin-top:0"></p>
+    <ol>
+      <li>לחצו "פתחו מצלמה" ואשרו גישה למצלמה ולמיקרופון.</li>
+      <li>המצלמה תופיע בחצי העליון, והשאלות בחצי התחתון.</li>
+      <li>לחצו "התחלת הקלטה". לכל שאלה יש <b id="secTxt">10</b> שניות, והשאלה הנוכחית מסומנת בצהוב.</li>
+      <li>בסוף צופים בסרטון, ורק אחרי אישור הוא נשלח.</li>
+    </ol>
+    <p style="opacity:.85;font-size:14px">טיפ: מקום שקט, אור מהחזית, והטלפון בגובה העיניים.</p>
+    <button class="primary" id="btnCam">פתחו מצלמה</button>
+    <div class="msg" id="mIntro"></div>
+  </div>
+
+  <div id="sNative" class="card hide">
+    <p style="margin-top:0"><b>לא הצלחנו לפתוח את המצלמה בתוך הדף,</b> אז נצלם עם אפליקציית המצלמה של הטלפון.</p>
+    <p>קראו את השאלות, ואז צלמו סרטון סלפי אחד שבו אתם עונים עליהן לפי הסדר:</p>
+    <ol id="qList"></ol>
+    <label class="btn primary" for="fileIn">פתחו את המצלמה וצלמו</label>
+    <input id="fileIn" type="file" accept="video/*" capture="user">
+    <div class="msg" id="mNative"></div>
+  </div>
+
+  <div id="sPreview" class="card hide">
+    <video id="preview" controls playsinline></video>
+    <p class="center" id="sizeTxt" style="opacity:.85"></p>
+    <button class="primary" id="btnUpload">מאשר/ת – שלחו את הסרטון</button>
+    <button class="ghost" id="btnRedo">הקלטה מחדש</button>
+    <div class="bar hide" id="bar"><div id="barIn"></div></div>
+    <div class="msg" id="mUp"></div>
+  </div>
+
+  <div id="sDone" class="card hide center">
+    <p style="font-size:22px;margin:6px 0">✨ הסרטון נשמר בקפסולה!</p>
+    <p>נתראה בטקס סיום י"ב.</p>
+  </div>
+</div>
+
+<div id="sRec" class="hide">
+  <div id="camWrap">
+    <video id="live" playsinline muted autoplay></video>
+    <div id="qtop">מוכנים? לחצו "התחלת הקלטה"</div>
+    <div id="qbar"></div>
+    <div id="recDot" class="hide">● מקליט</div>
+  </div>
+  <div id="qPanel"><ol id="qRecList"></ol></div>
+  <div id="recBar">
+    <button class="ghost" id="btnCancel">ביטול</button>
+    <button class="primary" id="btnRec">התחלת הקלטה</button>
+  </div>
+  <canvas id="canvas"></canvas>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbxNHQLq0iImMoXE9EKuejziy8lM5_gLmkTV_TgYJi2H4KyaqXpWiIgZ3vftD88ln3vWDA/exec';
+const $ = id => document.getElementById(id);
+const cards = ['sEmail','sCode','sMsg','sIntro','sNative','sPreview','sDone'];
+function show(id){
+  cards.forEach(s => $(s).classList.toggle('hide', s !== id));
+  $('sRec').classList.toggle('hide', id !== 'sRec');
+  $('main').classList.toggle('hide', id === 'sRec');
+  window.scrollTo(0,0);
+}
+async function api(action, data){
+  const res = await fetch(API, { method:'POST', body: JSON.stringify(Object.assign({ action: action }, data || {})) });
+  if (!res.ok) throw new Error('תקשורת (' + res.status + ')');
+  return res.json();
+}
+
+let S = {}, email = '', stream = null, recorder = null, chunks = [], recBlob = null;
+let qIndex = -1, left = 0, timer = null, drawing = false;
+
+api('hero').then(r => { if (r.ok && r.url) $('hero').style.backgroundImage = 'url(' + r.url + ')'; }).catch(()=>{});
+
+$('btnSend').onclick = async () => {
+  email = $('email').value.trim();
+  if (!email.includes('@')) { $('mEmail').textContent = 'נא להקליד כתובת מייל תקינה.'; return; }
+  $('btnSend').disabled = true; $('mEmail').textContent = 'שולח...';
+  try {
+    const r = await api('requestCode', { email: email });
+    if (!r.ok) { $('mEmail').textContent = r.msg; return; }
+    $('mEmail').textContent = ''; show('sCode'); $('code').focus();
+  } catch (e) { $('mEmail').textContent = 'שגיאה: ' + e.message; }
+  finally { $('btnSend').disabled = false; }
+};
+$('btnBack').onclick = () => { $('mCode').textContent = ''; show('sEmail'); };
+
+$('btnVerify').onclick = async () => {
+  $('btnVerify').disabled = true; $('mCode').textContent = 'בודק...';
+  try {
+    const r = await api('verify', { email: email, code: $('code').value });
+    if (!r.ok && r.msg && r.msg.indexOf('שלום') !== 0 && r.msg.indexOf('החשבון') !== 0) { $('mCode').textContent = r.msg; return; }
+    if (!r.ok) { $('msgTxt').textContent = r.msg; show('sMsg'); return; }
+    S = r;
+    $('hello').textContent = 'שלום ' + r.name + ' (' + r.cls + ')! יש ' + r.questions.length + ' שאלות.' +
+      (r.done ? ' כבר שלחת סרטון – הקלטה חדשה תישמר בנוסף.' : '');
+    $('secTxt').textContent = r.seconds;
+    ['qList','qRecList'].forEach(id => {
+      $(id).innerHTML = '';
+      r.questions.forEach(q => { const li = document.createElement('li'); li.textContent = q; $(id).appendChild(li); });
+    });
+    show('sIntro');
+  } catch (e) { $('mCode').textContent = 'שגיאה: ' + e.message; }
+  finally { $('btnVerify').disabled = false; }
+};
+
+$('btnCam').onclick = async () => {
+  $('mIntro').textContent = '';
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('NotSupported');
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:'user', width:{ideal:1280}, height:{ideal:720} },
+      audio: { echoCancellation:true, noiseSuppression:true }
+    });
+  } catch (e) {
+    if (e && e.name === 'NotAllowedError') {
+      $('mIntro').textContent = 'לא אושרה גישה למצלמה. אשרו מצלמה ומיקרופון בהגדרות הדפדפן ונסו שוב.';
+      return;
+    }
+    show('sNative');
+    return;
+  }
+  const v = $('live');
+  v.srcObject = stream;
+  show('sRec');
+  await v.play().catch(()=>{});
+  await new Promise(r => v.videoWidth ? r() : v.onloadedmetadata = r);
+  const portrait = v.videoHeight > v.videoWidth;
+  const c = $('canvas');
+  c.width = portrait ? 540 : 960;
+  c.height = portrait ? 960 : 540;
+  qIndex = -1; drawing = true; draw();
+  resetList();
+  $('btnRec').disabled = false; $('btnRec').textContent = 'התחלת הקלטה';
+  $('qtop').textContent = 'מוכנים? לחצו "התחלת הקלטה"';
+};
+
+function resetList(){
+  [...$('qRecList').children].forEach(li => li.className = '');
+  $('qbar').style.width = 0; $('recDot').classList.add('hide');
+}
+
+function wrapLines(ctx, text, maxW){
+  const words = text.split(' '); const lines = []; let line = '';
+  words.forEach(w => { const t = line ? line + ' ' + w : w;
+    if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; });
+  if (line) lines.push(line);
+  return lines;
+}
+
+function draw(){
+  if (!drawing) return;
+  const c = $('canvas'), ctx = c.getContext('2d'), v = $('live');
+  const W = c.width, H = c.height;
+  if (v.videoWidth) {
+    const vr = v.videoWidth / v.videoHeight, cr = W / H;
+    let sw = v.videoWidth, sh = v.videoHeight, sx = 0, sy = 0;
+    if (vr > cr) { sw = sh * cr; sx = (v.videoWidth - sw) / 2; } else { sh = sw / cr; sy = (v.videoHeight - sh) / 2; }
+    ctx.save(); ctx.translate(W, 0); ctx.scale(-1, 1);
+    ctx.drawImage(v, sx, sy, sw, sh, 0, 0, W, H);
+    ctx.restore();
+  }
+  if (qIndex >= 0 && qIndex < S.questions.length) {
+    const fs = Math.round(W * 0.05);
+    ctx.direction = 'rtl'; ctx.textAlign = 'center';
+    ctx.font = 'bold ' + fs + 'px Arial';
+    const lines = wrapLines(ctx, S.questions[qIndex], W * 0.88);
+    const boxH = lines.length * fs * 1.3 + fs * 1.2;
+    ctx.fillStyle = 'rgba(14,22,48,0.78)'; ctx.fillRect(0, H - boxH, W, boxH);
+    ctx.fillStyle = '#F4F1E8';
+    lines.forEach((l, i) => ctx.fillText(l, W/2, H - boxH + fs * 1.15 + i * fs * 1.3));
+  }
+  requestAnimationFrame(draw);
+}
+
+function setOverlay(){
+  const items = [...$('qRecList').children];
+  items.forEach((li, i) => li.className = i < qIndex ? 'done' : (i === qIndex ? 'cur' : ''));
+  if (qIndex >= 0 && qIndex < items.length) {
+    items[qIndex].scrollIntoView({ block:'nearest', behavior:'smooth' });
+    $('qtop').textContent = 'שאלה ' + (qIndex + 1) + ' מתוך ' + S.questions.length + ' · ' + left + ' שניות';
+    $('qbar').style.width = (100 * left / S.seconds) + '%';
+  }
+}
+
+function pickMime(){
+  const opts = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp8,opus','video/webm'];
+  return opts.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+}
+
+$('btnRec').onclick = () => {
+  if (!window.MediaRecorder) { stopCamera(); show('sNative'); return; }
+  $('btnRec').disabled = true; $('btnRec').textContent = 'מקליט...';
+  $('recDot').classList.remove('hide');
+  let rs;
+  try { rs = $('canvas').captureStream(30); stream.getAudioTracks().forEach(t => rs.addTrack(t)); }
+  catch (e) { rs = stream; }
+  const mime = pickMime();
+  chunks = [];
+  recorder = new MediaRecorder(rs, Object.assign({ videoBitsPerSecond: 1000000, audioBitsPerSecond: 64000 }, mime ? { mimeType: mime } : {}));
+  recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  recorder.onstop = () => {
+    stopCamera();
+    if (recorder.cancelled) { show('sIntro'); return; }
+    const type = (recorder.mimeType || mime || 'video/webm').split(';')[0];
+    toPreview(new Blob(chunks, { type: type }));
+  };
+  recorder.start(1000);
+  qIndex = 0; left = S.seconds; setOverlay();
+  timer = setInterval(() => {
+    left--;
+    if (left <= 0) {
+      qIndex++;
+      if (qIndex >= S.questions.length) { clearInterval(timer); qIndex = -1; recorder.stop(); return; }
+      left = S.seconds;
+    }
+    setOverlay();
+  }, 1000);
+};
+
+$('btnCancel').onclick = () => {
+  clearInterval(timer); qIndex = -1;
+  if (recorder && recorder.state === 'recording') { recorder.cancelled = true; recorder.stop(); }
+  else { stopCamera(); show('sIntro'); }
+};
+
+function stopCamera(){
+  drawing = false;
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null;
+}
+
+$('fileIn').onchange = () => {
+  const f = $('fileIn').files[0];
+  if (!f) return;
+  if (!/^video\//.test(f.type || 'video/')) { $('mNative').textContent = 'יש לבחור קובץ וידאו.'; return; }
+  toPreview(f);
+};
+
+function toPreview(blob){
+  recBlob = blob;
+  $('preview').src = URL.createObjectURL(blob);
+  $('sizeTxt').textContent = 'גודל הקובץ: ' + (blob.size / 1048576).toFixed(1) + ' MB';
+  $('btnUpload').disabled = false; $('btnRedo').disabled = false;
+  $('bar').classList.add('hide'); $('mUp').textContent = '';
+  show('sPreview');
+}
+
+$('btnRedo').onclick = () => { $('preview').removeAttribute('src'); $('fileIn').value = ''; show('sIntro'); };
+
+function toBase64(blob){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+}
+
+$('btnUpload').onclick = async () => {
+  $('btnUpload').disabled = true; $('btnRedo').disabled = true;
+  $('bar').classList.remove('hide'); $('barIn').style.width = '2%';
+  $('mUp').textContent = 'מעלה... לא לסגור את העמוד.';
+  try {
+    const CH = 4 * 1024 * 1024;
+    const st = await api('startUpload', { token: S.token, mime: recBlob.type || 'video/mp4', size: recBlob.size });
+    if (!st.ok) throw new Error(st.msg);
+    for (let start = 0; start < recBlob.size; start += CH) {
+      const b64 = await toBase64(recBlob.slice(start, Math.min(start + CH, recBlob.size)));
+      let r, tries = 0;
+      while (true) {
+        try { r = await api('uploadPart', { token: S.token, id: st.id, start: start, data: b64 }); if (!r.ok) throw new Error(r.msg); break; }
+        catch (e) { if (++tries >= 3) throw e; await new Promise(x => setTimeout(x, 1500)); }
+      }
+      $('barIn').style.width = Math.round(Math.min(start + CH, recBlob.size) / recBlob.size * 100) + '%';
+      if (r.done) break;
+    }
+    show('sDone');
+  } catch (e) {
+    $('mUp').textContent = 'ההעלאה נכשלה: ' + e.message + ' – נסו שוב.';
+    $('btnUpload').disabled = false; $('btnRedo').disabled = false;
+  }
+};
+</script>
+</body>
+</html>
