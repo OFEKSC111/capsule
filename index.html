@@ -477,6 +477,7 @@ async function sendAll(){
   keepAwake();
   /* מכינים נגן לחיבור כבר עכשיו, בתוך הלחיצה (נדרש באייפון) */
   const mv = getMergeVideo(); mv.muted = true; mv.src = URL.createObjectURL(clips[0]); mv.play().then(() => mv.pause()).catch(()=>{});
+  try { if (!mergeAC) { const AC = window.AudioContext || window.webkitAudioContext; mergeAC = new AC(); } mergeAC.resume().catch(()=>{}); } catch (e) {}
   try {
     // שלב 1: העלאת כל תשובה כקובץ נפרד (40% מהפס)
     for (let i = 0; i < N; i++) {
@@ -504,7 +505,7 @@ async function sendAll(){
 }
 $('btnRetry').onclick = () => sendAll();
 
-let _mv = null;
+let _mv = null, mergeAC = null;
 function getMergeVideo(){
   if (!_mv) { _mv = document.createElement('video'); _mv.playsInline = true; _mv.setAttribute('playsinline', ''); _mv.style.cssText = 'position:fixed;width:2px;height:2px;opacity:0;pointer-events:none'; document.body.appendChild(_mv); }
   return _mv;
@@ -512,8 +513,9 @@ function getMergeVideo(){
 
 async function mergeClips(onProg){
   const v = getMergeVideo();
-  const AC = window.AudioContext || window.webkitAudioContext;
-  const ac = new AC(); await ac.resume().catch(()=>{});
+  const ac = mergeAC;
+  await Promise.race([ac.resume().catch(()=>{}), sleep(1500)]);
+  if (ac.state !== 'running') throw new Error('audio');
   const dest = ac.createMediaStreamDestination();
   if (!v._src) v._src = ac.createMediaElementSource(v);
   v._src.connect(dest);
@@ -543,14 +545,14 @@ async function mergeClips(onProg){
     }
     const t0 = Date.now();
     const timerP = setInterval(() => onProg(Math.min(1, (doneSecs + (Date.now() - t0) / 1000) / totalSecs)), 500);
-    await v.play();
+    await Promise.race([v.play(), sleep(4000).then(() => { throw new Error('play'); })]);
     await new Promise(r => { v.onended = r; setTimeout(r, (secOf(i) + 8) * 1000); });
     clearInterval(timerP);
     doneSecs += secOf(i);
   }
   playing = false;
   rec.stop(); await done;
-  v._src.disconnect(); ac.close().catch(()=>{});
+  v._src.disconnect();
   onProg(1);
   const type = (rec.mimeType || mime || 'video/webm').split(';')[0];
   const blob = new Blob(ch, { type: type });
