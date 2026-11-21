@@ -248,7 +248,7 @@ async function openCamera(){
   try {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) throw new Error('NotSupported');
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode:'user', width:{ideal:1280}, height:{ideal:720} },
+      video: { facingMode:'user', width:{ideal:854}, height:{ideal:480}, frameRate:{ideal:24, max:30} },
       audio: { echoCancellation:true, noiseSuppression:true }
     });
   } catch (e) {
@@ -266,8 +266,8 @@ async function openCamera(){
   await new Promise(r => v.videoWidth ? r() : v.onloadedmetadata = r);
   const portrait = v.videoHeight > v.videoWidth;
   const c = $('canvas');
-  c.width = portrait ? 540 : 960;
-  c.height = portrait ? 960 : 540;
+  c.width = portrait ? 480 : 854;
+  c.height = portrait ? 854 : 480;
   drawing = true; draw();
   const first = clips.findIndex(x => !x);
   if (first < 0) goSummary(); else goReady(first);
@@ -371,11 +371,11 @@ async function startCountdown(){
 function startRecording(){
   mode = 'rec'; overlayQ = cur;
   let rs;
-  try { rs = $('canvas').captureStream(30); stream.getAudioTracks().forEach(t => rs.addTrack(t)); }
+  try { rs = $('canvas').captureStream(24); stream.getAudioTracks().forEach(t => rs.addTrack(t)); }
   catch (e) { rs = stream; }
   const mime = pickMime();
   chunks = [];
-  recorder = new MediaRecorder(rs, Object.assign({ videoBitsPerSecond: 1200000, audioBitsPerSecond: 64000 }, mime ? { mimeType: mime } : {}));
+  recorder = new MediaRecorder(rs, Object.assign({ videoBitsPerSecond: 650000, audioBitsPerSecond: 48000 }, mime ? { mimeType: mime } : {}));
   recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
   recorder.onstop = () => {
     overlayQ = -1;
@@ -523,11 +523,11 @@ async function mergeClips(onProg){
   const c = document.createElement('canvas');
   c.width = v.videoWidth || 540; c.height = v.videoHeight || 960;
   const ctx = c.getContext('2d');
-  const out = c.captureStream(30);
+  const out = c.captureStream(24);
   dest.stream.getAudioTracks().forEach(t => out.addTrack(t));
   const mime = pickMime();
   const ch = [];
-  const rec = new MediaRecorder(out, Object.assign({ videoBitsPerSecond: 1200000, audioBitsPerSecond: 64000 }, mime ? { mimeType: mime } : {}));
+  const rec = new MediaRecorder(out, Object.assign({ videoBitsPerSecond: 650000, audioBitsPerSecond: 48000 }, mime ? { mimeType: mime } : {}));
   rec.ondataavailable = e => { if (e.data && e.data.size) ch.push(e.data); };
   const done = new Promise(r => rec.onstop = r);
   let playing = true;
