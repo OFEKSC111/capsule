@@ -75,27 +75,6 @@
 
   <div id="sEmail">
     <div class="card">
-      <h2>מה עושים כאן?</h2>
-      <p style="margin:0 0 6px">מקליטים סרטון קצר לעצמכם – ואותו תראו רק בעוד כמה שנים, <b>בטקס סיום י"ב</b>.</p>
-      <ol>
-        <li>נכנסים עם המייל של משרד החינוך ומקלידים את הקוד שמגיע אליו.</li>
-        <li>המצלמה נפתחת: למעלה רואים את עצמכם, ולמטה את השאלה.</li>
-        <li>עונים על <b>שאלה אחת בכל פעם</b>. לפני כל שאלה יש זמן לחשוב, ולוחצים "התחלת הקלטה" רק כשמוכנים.</li>
-        <li>אחרי כל תשובה אפשר לצפות בה, <b>להקליט אותה מחדש</b>, או להמשיך לשאלה הבאה.</li>
-        <li>בסוף: לוחצים "סיום ושליחה". התשובות נשמרות, ומתחברות לסרטון אחד.</li>
-      </ol>
-      <details>
-        <summary>טיפים להקלטה טובה</summary>
-        <ul class="small">
-          <li>מקום שקט, בלי רעשי רקע.</li>
-          <li>אור מהחזית (חלון או מנורה מולכם, לא מאחוריכם).</li>
-          <li>הטלפון בגובה העיניים, יציב.</li>
-          <li>דברו בטבעיות – אין תשובות נכונות או לא נכונות.</li>
-          <li>את הסרטון רואים רק צוות הפרויקט, והוא נשמר עד סוף י"ב.</li>
-        </ul>
-      </details>
-    </div>
-    <div class="card">
       <label class="l" for="email">הקלידו את כתובת המייל של משרד החינוך:</label>
       <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="123456789@educ.org.il">
       <button class="primary" id="btnSend">שלחו לי קוד</button>
@@ -115,9 +94,28 @@
 
   <div id="sIntro" class="card hide">
     <p id="hello" style="font-size:18px;margin-top:0"></p>
+      <h2>מה עושים כאן?</h2>
+      <p style="margin:0 0 6px">מקליטים סרטון קצר לעצמכם – ואותו תראו רק בעוד כמה שנים, <b>בטקס סיום י"ב</b>.</p>
+      <ol>
+        <li>לוחצים "הבנתי, פותחים מצלמה" ומאשרים גישה למצלמה ולמיקרופון.</li>
+        <li>המצלמה נפתחת: למעלה רואים את עצמכם, ולמטה את השאלה.</li>
+        <li>עונים על <b>שאלה אחת בכל פעם</b>. לפני כל שאלה יש זמן לחשוב, ולוחצים "התחלת הקלטה" רק כשמוכנים.</li>
+        <li>אחרי כל תשובה אפשר לצפות בה, <b>להקליט אותה מחדש</b>, או להמשיך לשאלה הבאה.</li>
+        <li>בסוף: לוחצים "סיום ושליחה". התשובות נשמרות, ומתחברות לסרטון אחד.</li>
+      </ol>
+      <details>
+        <summary>טיפים להקלטה טובה</summary>
+        <ul class="small">
+          <li>מקום שקט, בלי רעשי רקע.</li>
+          <li>אור מהחזית (חלון או מנורה מולכם, לא מאחוריכם).</li>
+          <li>הטלפון בגובה העיניים, יציב.</li>
+          <li>דברו בטבעיות – אין תשובות נכונות או לא נכונות.</li>
+          <li>את הסרטון רואים רק צוות הפרויקט, והוא נשמר עד סוף י"ב.</li>
+        </ul>
+      </details>
     <p>יש <b id="nQ"></b> שאלות. עונים על אחת בכל פעם, ואפשר להקליט כל תשובה מחדש.</p>
     <details open><summary>השאלות</summary><ol id="qList"></ol></details>
-    <button class="primary" id="btnCam">פתחו מצלמה</button>
+    <button class="primary" id="btnCam">הבנתי, פותחים מצלמה</button>
     <div class="msg" id="mIntro"></div>
   </div>
 
@@ -236,7 +234,6 @@ $('btnVerify').onclick = async () => {
     $('chips').innerHTML = '';
     for (let i = 0; i < N; i++) { const c = document.createElement('div'); c.className = 'chip'; c.textContent = i + 1; $('chips').appendChild(c); }
     show('sIntro');
-    openCamera();
   } catch (e) { $('mCode').textContent = 'שגיאה: ' + e.message; }
   finally { $('btnVerify').disabled = false; }
 };
@@ -257,7 +254,7 @@ async function openCamera(){
   } catch (e) {
     if (e && e.name === 'NotAllowedError') {
       show('sIntro');
-      $('mIntro').textContent = 'לא אושרה גישה למצלמה. אשרו מצלמה ומיקרופון בהגדרות הדפדפן ולחצו שוב "פתחו מצלמה".';
+      $('mIntro').textContent = 'לא אושרה גישה למצלמה. אשרו מצלמה ומיקרופון בהגדרות הדפדפן ולחצו שוב "הבנתי, פותחים מצלמה".';
       return;
     }
     show('sNative'); return;
